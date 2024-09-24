@@ -25,6 +25,35 @@ export default function viteEsToolkitPlugin(): {
     transform(src) {
       if (src.includes('lodash')) {
         let srcWithReplacedImports = src;
+
+        // Replaces e.g. "import lodash from 'lodash';" with "import { * as lodash } from 'es-toolkit/compat';"
+        srcWithReplacedImports = srcWithReplacedImports.replace(
+          /import\s+(\w+)\s+from\s+['"]lodash['"]/g,
+          (_match, p1: string) => {
+            // If p1 = "_", then find all occurences of "_.*" in the source code
+            const globalImportUsages = srcWithReplacedImports.match(
+              new RegExp(`\\b${p1}\\.\\w+`, 'g'),
+            );
+
+            if (!globalImportUsages) {
+              // No lodash functions are used, will be treeshaken anyway
+              return _match;
+            }
+
+            const usedFunctions = globalImportUsages.map((usage) => usage.split('.')[1] || '');
+
+            const unsupportedFunctions = usedFunctions.filter(isUnsupportedFunction);
+
+            if (unsupportedFunctions.length) {
+              warnUnsupportedFunction(unsupportedFunctions);
+
+              return _match;
+            }
+
+            return `import { * as ${p1} } from 'es-toolkit/compat'`;
+          },
+        );
+
         // Replaces e.g. "import { isEqual } from 'lodash';" with "import { isEqual } from 'es-toolkit/compat';"
         srcWithReplacedImports = srcWithReplacedImports.replace(
           /import\s+\{\s*(\w+)\s*\}\s+from\s+['"]lodash['"]/g,

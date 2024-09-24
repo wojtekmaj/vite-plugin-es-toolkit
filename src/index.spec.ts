@@ -9,6 +9,44 @@ function runPlugin(src: string): string | undefined {
 }
 
 describe('esToolkitPlugin()', () => {
+  it('should replace default import from lodash with named import from es-toolkit/compat', () => {
+    const src = `import _ from 'lodash';
+_.isEqual({}, {});
+_.isFunction(() => {});`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(
+      `"import { * as _ } from 'es-toolkit/compat';
+_.isEqual({}, {});
+_.isFunction(() => {});"`,
+    );
+  });
+
+  it('should keep default import from lodash if an unsupported function is imported', () => {
+    const src = `import _ from 'lodash';
+_.every([], () => true);
+_.isEqual({}, {});`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(`"import _ from 'lodash';
+_.every([], () => true);
+_.isEqual({}, {});"`);
+  });
+
+  it('should not raise false positives for unsupported functions', () => {
+    const src = `import lodash from 'lodash';
+totallynotlodash.every([], () => true);
+lodash.isEqual({}, {});`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(`"import { * as lodash } from 'es-toolkit/compat';
+totallynotlodash.every([], () => true);
+lodash.isEqual({}, {});"`);
+  });
+
   it('should replace named import from lodash with named import from es-toolkit/compat', () => {
     const src = `import { isEqual } from 'lodash';`;
 
