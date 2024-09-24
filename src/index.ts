@@ -3,7 +3,6 @@ import * as esToolkitCompat from 'es-toolkit/compat';
 import type { PluginOption } from 'vite';
 
 const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/g;
-const namedImportRegex = /import\s+\{\s*(\w+)\s*\}\s+from\s+['"]lodash['"]/g;
 const namedImportsRegex = /import\s+\{\s*(\w+(?:,\s*\w+)*)\s*\}\s+from\s+['"]lodash['"]/g;
 const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/g;
 
@@ -56,20 +55,6 @@ export default function viteEsToolkitPlugin(): {
             }
 
             return `import { * as ${p1} } from 'es-toolkit/compat'`;
-          },
-        );
-
-        // Replaces e.g. "import { isEqual } from 'lodash';" with "import { isEqual } from 'es-toolkit/compat';"
-        srcWithReplacedImports = srcWithReplacedImports.replace(
-          namedImportRegex,
-          (_match, p1: string) => {
-            if (isUnsupportedFunction(p1)) {
-              warnUnsupportedFunction([p1]);
-
-              return _match;
-            }
-
-            return `import { ${p1} } from 'es-toolkit/compat'`;
           },
         );
 
