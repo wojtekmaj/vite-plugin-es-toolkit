@@ -30,7 +30,17 @@ export default function viteEsToolkitPlugin(): {
       if (src.includes('lodash')) {
         let srcWithReplacedImports = src;
 
-        // Replaces e.g. "import lodash from 'lodash';" with "import { * as lodash } from 'es-toolkit/compat';"
+        /**
+         * Replaces e.g.:
+         * ```
+         * import lodash from 'lodash';
+         * ```
+         * with:
+         * ```
+         * import { * as lodash } from 'es-toolkit/compat';
+         * ```
+         * provided that no unsupported functions are used.
+         */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultImportRegex,
           (_match, p1: string) => {
@@ -58,7 +68,18 @@ export default function viteEsToolkitPlugin(): {
           },
         );
 
-        // Replaces e.g. "import { every, isEqual } from 'lodash';" with "import { every } from 'lodash';import { isEqual } from 'es-toolkit/compat';" (every is not supported at the moment of writing)
+        /**
+         * Replaces e.g.:
+         * ```
+         * import { every, isEqual } from 'lodash';
+         * ```
+         * with:
+         * ```
+         * import { every } from 'lodash';
+         * import { isEqual } from 'es-toolkit/compat';
+         * ```
+         * (every is not supported at the moment of writing)
+         */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
           (_match, p1: string) => {
@@ -81,8 +102,23 @@ export default function viteEsToolkitPlugin(): {
           },
         );
 
-        // Replaces e.g. "import isEqual from 'lodash/isEqual';" with "import { isEqual } from 'es-toolkit/compat';"
-        // Replaces e.g. "import lodashIsEqual from 'lodash/isEqual';" with "import { isEqual as lodashIsEqual } from 'es-toolkit/compat';"
+        /**
+         * Replaces e.g.:
+         * ```
+         * import isEqual from 'lodash/isEqual';
+         * ```
+         * with:
+         * ```
+         * import { isEqual } from 'es-toolkit/compat';
+         * ```
+         * and:
+         * ```
+         * import lodashIsEqual from 'lodash/isEqual';
+         * ```
+         * with:
+         * ```
+         * import { isEqual as lodashIsEqual } from 'es-toolkit/compat';
+         */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultSingleImportRegex,
           (_match, p1: string, p2: string) => {
