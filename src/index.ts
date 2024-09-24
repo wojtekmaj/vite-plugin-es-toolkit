@@ -43,7 +43,7 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultImportRegex,
-          (_match, p1: string) => {
+          (match, p1: string) => {
             // If p1 = "_", then find all occurences of "_.*" in the source code
             const globalImportUsages = srcWithReplacedImports.match(
               new RegExp(`\\b${p1}\\.\\w+`, 'g'),
@@ -51,7 +51,7 @@ export default function viteEsToolkitPlugin(): {
 
             if (!globalImportUsages) {
               // No lodash functions are used, will be treeshaken anyway
-              return _match;
+              return match;
             }
 
             const usedFunctions = globalImportUsages.map((usage) => usage.split('.')[1] || '');
@@ -61,7 +61,7 @@ export default function viteEsToolkitPlugin(): {
             if (unsupportedFunctions.length) {
               warnUnsupportedFunction(unsupportedFunctions);
 
-              return _match;
+              return match;
             }
 
             return `import { * as ${p1} } from 'es-toolkit/compat'`;
@@ -82,7 +82,7 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
-          (_match, p1: string) => {
+          (match, p1: string) => {
             const params = p1.split(',').map((param) => param.trim());
 
             const currentSupportedFunctions = params.filter(isSupportedFunction);
@@ -92,7 +92,7 @@ export default function viteEsToolkitPlugin(): {
               warnUnsupportedFunction(unsupportedFunctions);
 
               if (!currentSupportedFunctions.length) {
-                return _match;
+                return match;
               }
 
               return `import { ${currentSupportedFunctions.join(', ')} } from 'es-toolkit/compat';import { ${unsupportedFunctions.join(', ')} } from 'lodash'`;
@@ -121,11 +121,11 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultSingleImportRegex,
-          (_match, p1: string, p2: string) => {
+          (match, p1: string, p2: string) => {
             if (isUnsupportedFunction(p2)) {
               warnUnsupportedFunction([p2]);
 
-              return _match;
+              return match;
             }
 
             if (p1 === p2) {
