@@ -43,10 +43,10 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultImportRegex,
-          (match, p1: string) => {
+          (match, defaultImportName: string) => {
             // If p1 = "_", then find all occurences of "_.*" in the source code
             const globalImportUsages = srcWithReplacedImports.match(
-              new RegExp(`\\b${p1}\\.\\w+`, 'g'),
+              new RegExp(`\\b${defaultImportName}\\.\\w+`, 'g'),
             );
 
             if (!globalImportUsages) {
@@ -64,7 +64,7 @@ export default function viteEsToolkitPlugin(): {
               return match;
             }
 
-            return `import { * as ${p1} } from 'es-toolkit/compat'`;
+            return `import { * as ${defaultImportName} } from 'es-toolkit/compat'`;
           },
         );
 
@@ -82,8 +82,8 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
-          (match, p1: string) => {
-            const params = p1
+          (match, namedImportNames: string) => {
+            const params = namedImportNames
               .split(',')
               .map((param) => param.trim())
               .filter(Boolean);
@@ -124,18 +124,18 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultSingleImportRegex,
-          (match, p1: string, p2: string) => {
-            if (isUnsupportedFunction(p2)) {
-              warnUnsupportedFunction([p2]);
+          (match, customNamedImportName: string, actualNamedImportName: string) => {
+            if (isUnsupportedFunction(actualNamedImportName)) {
+              warnUnsupportedFunction([actualNamedImportName]);
 
               return match;
             }
 
-            if (p1 === p2) {
-              return `import { ${p2} } from 'es-toolkit/compat'`;
+            if (actualNamedImportName === customNamedImportName) {
+              return `import { ${actualNamedImportName} } from 'es-toolkit/compat'`;
             }
 
-            return `import { ${p2} as ${p1} } from 'es-toolkit/compat'`;
+            return `import { ${actualNamedImportName} as ${customNamedImportName} } from 'es-toolkit/compat'`;
           },
         );
 
