@@ -2,6 +2,11 @@ import * as esToolkitCompat from 'es-toolkit/compat';
 
 import type { PluginOption } from 'vite';
 
+const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/g;
+const namedImportRegex = /import\s+\{\s*(\w+)\s*\}\s+from\s+['"]lodash['"]/g;
+const namedImportsRegex = /import\s+\{\s*(\w+(?:,\s*\w+)*)\s*\}\s+from\s+['"]lodash['"]/g;
+const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/g;
+
 export default function viteEsToolkitPlugin(): {
   name: string;
   transform(src: string, id: string): { code: string; map: null } | undefined;
@@ -28,7 +33,7 @@ export default function viteEsToolkitPlugin(): {
 
         // Replaces e.g. "import lodash from 'lodash';" with "import { * as lodash } from 'es-toolkit/compat';"
         srcWithReplacedImports = srcWithReplacedImports.replace(
-          /import\s+(\w+)\s+from\s+['"]lodash['"]/g,
+          defaultImportRegex,
           (_match, p1: string) => {
             // If p1 = "_", then find all occurences of "_.*" in the source code
             const globalImportUsages = srcWithReplacedImports.match(
@@ -56,7 +61,7 @@ export default function viteEsToolkitPlugin(): {
 
         // Replaces e.g. "import { isEqual } from 'lodash';" with "import { isEqual } from 'es-toolkit/compat';"
         srcWithReplacedImports = srcWithReplacedImports.replace(
-          /import\s+\{\s*(\w+)\s*\}\s+from\s+['"]lodash['"]/g,
+          namedImportRegex,
           (_match, p1: string) => {
             if (isUnsupportedFunction(p1)) {
               warnUnsupportedFunction([p1]);
@@ -70,7 +75,7 @@ export default function viteEsToolkitPlugin(): {
 
         // Replaces e.g. "import { every, isEqual } from 'lodash';" with "import { every } from 'lodash';import { isEqual } from 'es-toolkit/compat';" (every is not supported at the moment of writing)
         srcWithReplacedImports = srcWithReplacedImports.replace(
-          /import\s+\{\s*(\w+(?:,\s*\w+)*)\s*\}\s+from\s+['"]lodash['"]/g,
+          namedImportsRegex,
           (_match, p1: string) => {
             const params = p1.split(',').map((param) => param.trim());
 
@@ -94,7 +99,7 @@ export default function viteEsToolkitPlugin(): {
         // Replaces e.g. "import isEqual from 'lodash/isEqual';" with "import { isEqual } from 'es-toolkit/compat';"
         // Replaces e.g. "import lodashIsEqual from 'lodash/isEqual';" with "import { isEqual as lodashIsEqual } from 'es-toolkit/compat';"
         srcWithReplacedImports = srcWithReplacedImports.replace(
-          /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/g,
+          defaultSingleImportRegex,
           (_match, p1: string, p2: string) => {
             if (isUnsupportedFunction(p2)) {
               warnUnsupportedFunction([p2]);
