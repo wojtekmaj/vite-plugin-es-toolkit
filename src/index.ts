@@ -2,9 +2,9 @@ import * as esToolkitCompat from 'es-toolkit/compat';
 
 import type { PluginOption } from 'vite';
 
-const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/g;
-const namedImportsRegex = /import\s+\{\s*(\w+(?:,\s*\w+)*)\s*\}\s+from\s+['"]lodash['"]/g;
-const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/g;
+const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/gm;
+const namedImportsRegex = /import\s+\{\s*([\w\s,]+)\s*\}\s+from\s+['"]lodash['"]/gm;
+const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/gm;
 
 export default function viteEsToolkitPlugin(): {
   name: string;
@@ -83,7 +83,10 @@ export default function viteEsToolkitPlugin(): {
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
           (match, p1: string) => {
-            const params = p1.split(',').map((param) => param.trim());
+            const params = p1
+              .split(',')
+              .map((param) => param.trim())
+              .filter(Boolean);
 
             const currentSupportedFunctions = params.filter(isSupportedFunction);
             const unsupportedFunctions = params.filter(isUnsupportedFunction);

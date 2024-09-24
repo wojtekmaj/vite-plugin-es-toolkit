@@ -73,6 +73,19 @@ lodash.isEqual({}, {});"`);
     );
   });
 
+  it('should replace multiple named imports (multiline) from lodash with named imports from es-toolkit/compat', () => {
+    const src = `import {
+  isEqual,
+  isFunction,
+} from 'lodash';`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(
+      `"import { isEqual, isFunction } from 'es-toolkit/compat';"`,
+    );
+  });
+
   it('should replace named import from lodash with named import from es-toolkit/compat and keep unsupported named imports from lodash', () => {
     const src = `import { every, isEqual } from 'lodash';`;
 
