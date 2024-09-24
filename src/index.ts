@@ -8,6 +8,18 @@ export default function viteEsToolkitPlugin(): {
 } {
   const supportedFunctions = Object.keys(esToolkitCompat);
 
+  function isSupportedFunction(name: string): boolean {
+    return supportedFunctions.includes(name);
+  }
+
+  function isUnsupportedFunction(name: string): boolean {
+    return !isSupportedFunction(name);
+  }
+
+  function warnUnsupportedFunction(names: string[]): void {
+    console.warn(`Unsupported lodash function${names.length > 1 ? 's' : ''}: ${names.join(', ')}`);
+  }
+
   return {
     name: 'vite:es-toolkit',
     transform(src) {
@@ -17,8 +29,9 @@ export default function viteEsToolkitPlugin(): {
         srcWithReplacedImports = srcWithReplacedImports.replace(
           /import\s+\{\s*(\w+)\s*\}\s+from\s+['"]lodash['"]/g,
           (_match, p1: string) => {
-            if (!supportedFunctions.includes(p1)) {
-              console.warn(`Unsupported lodash function: ${p1}`);
+            if (isUnsupportedFunction(p1)) {
+              warnUnsupportedFunction([p1]);
+
               return _match;
             }
 
@@ -32,15 +45,11 @@ export default function viteEsToolkitPlugin(): {
           (_match, p1: string) => {
             const params = p1.split(',').map((param) => param.trim());
 
-            const currentSupportedFunctions = params.filter((param) =>
-              supportedFunctions.includes(param),
-            );
-            const unsupportedFunctions = params.filter(
-              (param) => !supportedFunctions.includes(param),
-            );
+            const currentSupportedFunctions = params.filter(isSupportedFunction);
+            const unsupportedFunctions = params.filter(isUnsupportedFunction);
 
             if (unsupportedFunctions.length) {
-              console.warn(`Unsupported lodash functions: ${unsupportedFunctions.join(', ')}`);
+              warnUnsupportedFunction(unsupportedFunctions);
 
               if (!currentSupportedFunctions.length) {
                 return _match;
@@ -58,8 +67,9 @@ export default function viteEsToolkitPlugin(): {
         srcWithReplacedImports = srcWithReplacedImports.replace(
           /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/g,
           (_match, p1: string, p2: string) => {
-            if (!supportedFunctions.includes(p2)) {
-              console.warn(`Unsupported lodash function: ${p2}`);
+            if (isUnsupportedFunction(p2)) {
+              warnUnsupportedFunction([p2]);
+
               return _match;
             }
 
