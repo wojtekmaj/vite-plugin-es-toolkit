@@ -134,4 +134,30 @@ lodash.isEqual({}, {});"`);
 
     expect(result).toMatchInlineSnapshot(`"import every from 'lodash/every';"`);
   });
+
+  it('should replace default import from lodash/*.js with named import from es-toolkit/compat', () => {
+    const src = `import isEqual from 'lodash/isEqual.js';`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(`"import { isEqual } from 'es-toolkit/compat';"`);
+  });
+
+  it('should replace renamed default import from lodash/*.js with renamed named import from es-toolkit/compat', () => {
+    const src = `import lodashIsEqual from 'lodash/isEqual.js';`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(
+      `"import { isEqual as lodashIsEqual } from 'es-toolkit/compat';"`,
+    );
+  });
+
+  it('should keep unsupported default imports from lodash/*.js', () => {
+    const src = `import every from 'lodash/every.js';`;
+
+    const result = runPlugin(src);
+
+    expect(result).toMatchInlineSnapshot(`"import every from 'lodash/every.js';"`);
+  });
 });

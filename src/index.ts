@@ -4,7 +4,7 @@ import type { PluginOption } from 'vite';
 
 const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/gm;
 const namedImportsRegex = /import\s+\{\s*([\w\s,]+)\s*\}\s+from\s+['"]lodash['"]/gm;
-const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)['"]/gm;
+const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)(\.js)?['"]/gm;
 
 export default function viteEsToolkitPlugin(): {
   name: string;
