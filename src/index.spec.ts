@@ -76,18 +76,25 @@ lodash.isEqual({}, {});"`);
       );
     });
 
-    it.todo(
-      'should replace renamed named import from lodash with named import from es-toolkit/compat',
-      () => {
-        const src = `import { isEqual as lodashIsEqual } from 'lodash';`;
+    it('should replace renamed named import from lodash with named import from es-toolkit/compat', () => {
+      const src = `import { isEqual as lodashIsEqual } from 'lodash';`;
 
-        const result = runPlugin(src);
+      const result = runPlugin(src);
 
-        expect(result).toMatchInlineSnapshot(
-          `"import { isEqual as lodashIsEqual } from 'es-toolkit/compat';"`,
-        );
-      },
-    );
+      expect(result).toMatchInlineSnapshot(
+        `"import { isEqual as lodashIsEqual } from 'es-toolkit/compat';"`,
+      );
+    });
+
+    it('should replace multiple renamed named imports from lodash with named import from es-toolkit/compat', () => {
+      const src = `import { isEqual as lodashIsEqual, isFunction as lodashIsFunction } from 'lodash';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(
+        `"import { isEqual as lodashIsEqual, isFunction as lodashIsFunction } from 'es-toolkit/compat';"`,
+      );
+    });
 
     it('should replace multiple named imports (multiline) from lodash with named imports from es-toolkit/compat', () => {
       const src = `import {
@@ -99,6 +106,19 @@ lodash.isEqual({}, {});"`);
 
       expect(result).toMatchInlineSnapshot(
         `"import { isEqual, isFunction } from 'es-toolkit/compat';"`,
+      );
+    });
+
+    it('should replace multiple renamed named imports (multiline) from lodash with named imports from es-toolkit/compat', () => {
+      const src = `import {
+  isEqual as lodashIsEqual,
+  isFunction as lodashIsFunction,
+} from 'lodash';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(
+        `"import { isEqual as lodashIsEqual, isFunction as lodashIsFunction } from 'es-toolkit/compat';"`,
       );
     });
 
