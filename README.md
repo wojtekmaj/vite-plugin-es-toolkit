@@ -26,6 +26,9 @@ export default defineConfig({
 });
 ```
 
+> [!TIP]
+> Measure actual impact of `vite-plugin-es-toolkit` on _your_ codebase with [Vite Compare Bundle Size](https://github.com/marketplace/actions/vite-compare-bundle-size) GitHub Action.
+
 ## License
 
 The MIT License.
