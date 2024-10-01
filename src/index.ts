@@ -137,7 +137,7 @@ export default function viteEsToolkitPlugin(): {
               .map((param) => param.trim())
               .filter(Boolean);
 
-            const parsedNamedImportNames: NamedImport[] = namedImportNames.map(parseNamedImport);
+            const parsedNamedImportNames = namedImportNames.map(parseNamedImport);
 
             const currentSupportedFunctions = parsedNamedImportNames.filter(({ actualName }) =>
               isSupportedFunction(actualName),
