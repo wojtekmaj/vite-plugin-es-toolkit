@@ -18,7 +18,7 @@ _.isFunction(() => {});`;
       const result = runPlugin(src);
 
       expect(result).toMatchInlineSnapshot(
-        `"import { * as _ } from 'es-toolkit/compat';
+        `"import * as _ from 'es-toolkit/compat';
 _.isEqual({}, {});
 _.isFunction(() => {});"`,
       );
@@ -43,7 +43,7 @@ lodash.isEqual({}, {});`;
 
       const result = runPlugin(src);
 
-      expect(result).toMatchInlineSnapshot(`"import { * as lodash } from 'es-toolkit/compat';
+      expect(result).toMatchInlineSnapshot(`"import * as lodash from 'es-toolkit/compat';
 totallynotlodash.every([], () => true);
 lodash.isEqual({}, {});"`);
     });
