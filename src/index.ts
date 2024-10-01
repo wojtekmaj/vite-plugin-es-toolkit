@@ -85,7 +85,7 @@ export default function viteEsToolkitPlugin(): {
          * ```
          * with:
          * ```
-         * import { * as lodash } from 'es-toolkit/compat';
+         * import * as lodash from 'es-toolkit/compat';
          * ```
          * provided that no unsupported functions are used.
          */
@@ -112,7 +112,7 @@ export default function viteEsToolkitPlugin(): {
               return match;
             }
 
-            return `import { * as ${defaultImportName} } from 'es-toolkit/compat'`;
+            return `import * as ${defaultImportName} from 'es-toolkit/compat'`;
           },
         );
 
