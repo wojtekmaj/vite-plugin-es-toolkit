@@ -43,7 +43,7 @@
     "rimraf": "^6.0.0",
     "typescript": "^5.5.2",
     "vite": "^6.0.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.5"
   },
   "peerDependencies": {
     "es-toolkit": "^1.11.0",
