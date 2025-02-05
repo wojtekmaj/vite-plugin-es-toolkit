@@ -2,9 +2,9 @@ import * as esToolkitCompat from 'es-toolkit/compat';
 
 import type { PluginOption } from 'vite';
 
-const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/gm;
-const namedImportsRegex = /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"]lodash['"]/gm;
-const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)(\.js)?['"]/gm;
+const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash(?:-es)?['"]/gm;
+const namedImportsRegex = /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"]lodash(?:-es)?['"]/gm;
+const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash(?:-es)\/(\w+)(\.js)?['"]/gm;
 
 type NamedImport = {
   actualName: string;
