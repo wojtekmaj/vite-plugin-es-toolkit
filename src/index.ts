@@ -131,7 +131,7 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
-          (match, rawNamedImportNames: string, moduleName) => {
+          (match, rawNamedImportNames: string, moduleName: string) => {
             // Split by comma, trim whitespace, remove empty strings
             const namedImportNames = rawNamedImportNames
               .split(',')
