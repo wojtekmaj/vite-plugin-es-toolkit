@@ -10,32 +10,40 @@ const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"](lodash(?:-es)?)\/
 const standalonePackageImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\.(\w+)['"]/gm;
 
 type NamedImport = {
-  actualName: string;
-  customName: string;
+  actual: string;
+  custom: string;
 };
 
 export default function viteEsToolkitPlugin(): {
   name: string;
   transform(src: string, id: string): { code: string; map: null } | undefined;
 } {
-  const supportedFunctions = Object.keys(esToolkitCompat);
+  const actualFunctionNameMap = new Map<string, string>();
 
-  const supportedStandalonePackages = supportedFunctions.map((name) => name.toLowerCase());
+  const supportedFunctions = new Set(Object.keys(esToolkitCompat));
+
+  const supportedStandalonePackages = new Set(
+    Array.from(supportedFunctions).map((name) => {
+      const result = name.toLowerCase();
+
+      actualFunctionNameMap.set(result, name);
+
+      return result;
+    }),
+  );
+
+  const transformCache = new Map<string, { code: string; map: null }>();
 
   function isSupportedFunction(name: string): boolean {
-    return supportedFunctions.includes(name);
+    return supportedFunctions.has(name);
   }
 
   function isUnsupportedFunction(name: string): boolean {
-    return !isSupportedFunction(name);
-  }
-
-  function isSupportedStandalonePackage(name: string): boolean {
-    return supportedStandalonePackages.includes(name);
+    return !supportedFunctions.has(name);
   }
 
   function isUnsupportedStandalonePackage(name: string): boolean {
-    return !isSupportedStandalonePackage(name);
+    return !supportedStandalonePackages.has(name);
   }
 
   function warnUnsupportedFunction(names: string[]): void {
@@ -53,7 +61,7 @@ export default function viteEsToolkitPlugin(): {
    * ```
    * will return:
    * ```
-   * { actualName: 'isEqual', customName: 'lodashIsEqual' }
+   * { actual: 'isEqual', custom: 'lodashIsEqual' }
    * ```
    * and:
    * ```
@@ -61,248 +69,261 @@ export default function viteEsToolkitPlugin(): {
    * ```
    * will return:
    * ```
-   * { actualName: 'isEqual', customName: 'isEqual' }
+   * { actual: 'isEqual', custom: 'isEqual' }
    * ```
    */
   function parseNamedImport(namedImportName: string): NamedImport {
-    const [actualName, customName] = namedImportName.split(' as ');
+    const asIndex = namedImportName.indexOf(' as ');
 
-    if (!actualName) {
-      throw new Error('Invalid named import');
+    if (asIndex === -1) {
+      return {
+        actual: namedImportName,
+        custom: namedImportName,
+      };
     }
 
     return {
-      actualName,
-      customName: customName || actualName,
+      actual: namedImportName.substring(0, asIndex),
+      custom: namedImportName.substring(asIndex + 4), // 4 = length of " as "
     };
   }
 
-  function renderNamedImport({ actualName, customName }: NamedImport): string {
-    if (actualName === customName) {
-      return actualName;
-    }
-
-    return `${actualName} as ${customName}`;
+  function renderNamedImport({ actual, custom }: NamedImport): string {
+    return actual === custom ? actual : `${actual} as ${custom}`;
   }
 
   function renderNamedImports(namedImports: NamedImport[]) {
-    return `${namedImports.map(renderNamedImport).join(', ')}`;
+    return namedImports.map(renderNamedImport).join(', ');
+  }
+
+  function getActualFunctionName(standalonePackageName: string): string | undefined {
+    return actualFunctionNameMap.get(standalonePackageName);
   }
 
   return {
     name: 'vite:es-toolkit',
     transform(src) {
-      if (src.includes('lodash')) {
-        let srcWithReplacedImports = src;
-
-        /**
-         * Replaces e.g.:
-         * ```
-         * import lodash from 'lodash';
-         * ```
-         * with:
-         * ```
-         * import * as lodash from 'es-toolkit/compat';
-         * ```
-         * provided that no unsupported functions are used.
-         */
-        srcWithReplacedImports = srcWithReplacedImports.replace(
-          defaultImportRegex,
-          (match, defaultImportName: string) => {
-            // If p1 = "_", then find all occurences of "_.*" in the source code
-            const globalImportUsages = srcWithReplacedImports.match(
-              new RegExp(`\\b${defaultImportName}\\.\\w+`, 'g'),
-            );
-
-            if (!globalImportUsages) {
-              // No lodash functions are used, will be treeshaken anyway
-              return match;
-            }
-
-            const usedFunctions = globalImportUsages.map((usage) => usage.split('.')[1] || '');
-
-            const unsupportedFunctions = usedFunctions.filter(isUnsupportedFunction);
-
-            if (unsupportedFunctions.length) {
-              warnUnsupportedFunction(unsupportedFunctions);
-
-              return match;
-            }
-
-            return `import * as ${defaultImportName} from 'es-toolkit/compat'`;
-          },
-        );
-
-        /**
-         * Replaces e.g.:
-         * ```
-         * import * as lodash from 'lodash';
-         * ```
-         * with:
-         * ```
-         * import * as lodash from 'es-toolkit/compat';
-         * ```
-         * provided that no unsupported functions are used.
-         */
-        srcWithReplacedImports = srcWithReplacedImports.replace(
-          starImportRegex,
-          (match, starImportName: string) => {
-            // If p1 = "_", then find all occurences of "_.*" in the source code
-            const globalImportUsages = srcWithReplacedImports.match(
-              new RegExp(`\\b${starImportName}\\.\\w+`, 'g'),
-            );
-
-            if (!globalImportUsages) {
-              // No lodash functions are used, will be treeshaken anyway
-              return match;
-            }
-
-            const usedFunctions = globalImportUsages.map((usage) => usage.split('.')[1] || '');
-
-            const unsupportedFunctions = usedFunctions.filter(isUnsupportedFunction);
-
-            if (unsupportedFunctions.length) {
-              warnUnsupportedFunction(unsupportedFunctions);
-
-              return match;
-            }
-
-            return `import * as ${starImportName} from 'es-toolkit/compat'`;
-          },
-        );
-
-        /**
-         * Replaces e.g.:
-         * ```
-         * import { every, isEqual } from 'lodash';
-         * ```
-         * with:
-         * ```
-         * import { every } from 'lodash';
-         * import { isEqual } from 'es-toolkit/compat';
-         * ```
-         * (every is not supported at the moment of writing)
-         */
-        srcWithReplacedImports = srcWithReplacedImports.replace(
-          namedImportsRegex,
-          (match, rawNamedImportNames: string, moduleName: string) => {
-            // Split by comma, trim whitespace, remove empty strings
-            const namedImportNames = rawNamedImportNames
-              .split(',')
-              .map((param) => param.trim())
-              .filter(Boolean);
-
-            const parsedNamedImportNames = namedImportNames.map(parseNamedImport);
-
-            const currentSupportedFunctions = parsedNamedImportNames.filter(({ actualName }) =>
-              isSupportedFunction(actualName),
-            );
-            const unsupportedFunctions = parsedNamedImportNames.filter(({ actualName }) =>
-              isUnsupportedFunction(actualName),
-            );
-
-            if (unsupportedFunctions.length) {
-              warnUnsupportedFunction(unsupportedFunctions.map(({ actualName }) => actualName));
-
-              if (!currentSupportedFunctions.length) {
-                return match;
-              }
-
-              return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat';import { ${renderNamedImports(unsupportedFunctions)} } from '${moduleName}'`;
-            }
-
-            return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat'`;
-          },
-        );
-
-        /**
-         * Replaces e.g.:
-         * ```
-         * import isEqual from 'lodash/isEqual';
-         * ```
-         * with:
-         * ```
-         * import { isEqual } from 'es-toolkit/compat';
-         * ```
-         * and:
-         * ```
-         * import lodashIsEqual from 'lodash/isEqual';
-         * ```
-         * with:
-         * ```
-         * import { isEqual as lodashIsEqual } from 'es-toolkit/compat';
-         */
-        srcWithReplacedImports = srcWithReplacedImports.replace(
-          defaultSingleImportRegex,
-          (
-            match,
-            customNamedImportName: string,
-            _moduleName: string,
-            actualNamedImportName: string,
-          ) => {
-            if (isUnsupportedFunction(actualNamedImportName)) {
-              warnUnsupportedFunction([actualNamedImportName]);
-
-              return match;
-            }
-
-            if (actualNamedImportName === customNamedImportName) {
-              return `import { ${actualNamedImportName} } from 'es-toolkit/compat'`;
-            }
-
-            return `import { ${actualNamedImportName} as ${customNamedImportName} } from 'es-toolkit/compat'`;
-          },
-        );
-
-        /**
-         * Replaces e.g.:
-         * ```
-         * import get from 'lodash.get';
-         * ```
-         * with:
-         * ```
-         * import { get } from 'es-toolkit/compat';
-         * ```
-         * and:
-         * ```
-         * import lodashGet from 'lodash.get';
-         * ```
-         * with:
-         * ```
-         * import { get as lodashGet } from 'es-toolkit/compat';
-         * ```
-         */
-        srcWithReplacedImports = srcWithReplacedImports.replace(
-          standalonePackageImportRegex,
-          (match, defaultImportName: string, standalonePackageName: string) => {
-            if (isUnsupportedStandalonePackage(standalonePackageName)) {
-              warnUnsupportedStandalonePackage(standalonePackageName);
-
-              return match;
-            }
-
-            // Replaces e.g. isequal with isEqual
-            const actualFunctionName = supportedFunctions.find(
-              (name) => name.toLowerCase() === standalonePackageName,
-            );
-
-            if (!actualFunctionName) {
-              throw new Error(`Unable to find actual function name for ${standalonePackageName}`);
-            }
-
-            if (defaultImportName === actualFunctionName) {
-              return `import { ${actualFunctionName} } from 'es-toolkit/compat'`;
-            }
-
-            return `import { ${actualFunctionName} as ${defaultImportName} } from 'es-toolkit/compat'`;
-          },
-        );
-
-        return {
-          code: srcWithReplacedImports,
-          map: null,
-        };
+      if (!src.includes('lodash')) {
+        return;
       }
+
+      const cacheKey = src;
+
+      if (transformCache.has(cacheKey)) {
+        return transformCache.get(cacheKey);
+      }
+
+      let srcWithReplacedImports = src;
+
+      /**
+       * Replaces e.g.:
+       * ```
+       * import lodash from 'lodash';
+       * ```
+       * with:
+       * ```
+       * import * as lodash from 'es-toolkit/compat';
+       * ```
+       * provided that no unsupported functions are used.
+       */
+      srcWithReplacedImports = srcWithReplacedImports.replace(
+        defaultImportRegex,
+        (match, defaultImportName: string) => {
+          const usageRegExp = new RegExp(`\\b${defaultImportName}\\.\\w+`, 'g');
+          const globalImportUsages = srcWithReplacedImports.match(usageRegExp);
+
+          if (!globalImportUsages) {
+            // No lodash functions are used, will be treeshaken anyway
+            return match;
+          }
+
+          const unsupportedFunctions = new Set<string>();
+
+          for (const usage of globalImportUsages) {
+            const functionName = usage.split('.')[1] || '';
+
+            if (isUnsupportedFunction(functionName)) {
+              unsupportedFunctions.add(functionName);
+            }
+          }
+
+          if (unsupportedFunctions.size > 0) {
+            warnUnsupportedFunction(Array.from(unsupportedFunctions));
+
+            return match;
+          }
+
+          return `import * as ${defaultImportName} from 'es-toolkit/compat'`;
+        },
+      );
+
+      /**
+       * Replaces e.g.:
+       * ```
+       * import * as lodash from 'lodash';
+       * ```
+       * with:
+       * ```
+       * import * as lodash from 'es-toolkit/compat';
+       * ```
+       * provided that no unsupported functions are used.
+       */
+      srcWithReplacedImports = srcWithReplacedImports.replace(
+        starImportRegex,
+        (match, starImportName: string) => {
+          const usageRegExp = new RegExp(`\\b${starImportName}\\.\\w+`, 'g');
+          const globalImportUsages = srcWithReplacedImports.match(usageRegExp);
+
+          if (!globalImportUsages) {
+            // No lodash functions are used, will be treeshaken anyway
+            return match;
+          }
+
+          const unsupportedFunctions = new Set<string>();
+
+          for (const usage of globalImportUsages) {
+            const functionName = usage.split('.')[1] || '';
+
+            if (isUnsupportedFunction(functionName)) {
+              unsupportedFunctions.add(functionName);
+            }
+          }
+
+          if (unsupportedFunctions.size > 0) {
+            warnUnsupportedFunction(Array.from(unsupportedFunctions));
+
+            return match;
+          }
+
+          return `import * as ${starImportName} from 'es-toolkit/compat'`;
+        },
+      );
+
+      /**
+       * Replaces e.g.:
+       * ```
+       * import { every, isEqual } from 'lodash';
+       * ```
+       * with:
+       * ```
+       * import { every } from 'lodash';
+       * import { isEqual } from 'es-toolkit/compat';
+       * ```
+       * (every is not supported at the moment of writing)
+       */
+      srcWithReplacedImports = srcWithReplacedImports.replace(
+        namedImportsRegex,
+        (match, rawNamedImportNames: string, moduleName: string) => {
+          // Split by comma, trim whitespace, remove empty strings
+          const namedImportNames = rawNamedImportNames
+            .split(',')
+            .map((param) => param.trim())
+            .filter(Boolean);
+
+          const currentSupportedFunctions: NamedImport[] = [];
+          const unsupportedFunctions: NamedImport[] = [];
+
+          for (const name of namedImportNames) {
+            const parsedImport = parseNamedImport(name);
+
+            if (isSupportedFunction(parsedImport.actual)) {
+              currentSupportedFunctions.push(parsedImport);
+            } else {
+              unsupportedFunctions.push(parsedImport);
+            }
+          }
+
+          if (!currentSupportedFunctions.length) {
+            return match;
+          }
+
+          let result = `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat'`;
+
+          if (unsupportedFunctions.length > 0) {
+            warnUnsupportedFunction(unsupportedFunctions.map(({ actual }) => actual));
+
+            result += `;import { ${renderNamedImports(unsupportedFunctions)} } from '${moduleName}'`;
+          }
+
+          return result;
+        },
+      );
+
+      /**
+       * Replaces e.g.:
+       * ```
+       * import isEqual from 'lodash/isEqual';
+       * ```
+       * with:
+       * ```
+       * import { isEqual } from 'es-toolkit/compat';
+       * ```
+       * and:
+       * ```
+       * import lodashIsEqual from 'lodash/isEqual';
+       * ```
+       * with:
+       * ```
+       * import { isEqual as lodashIsEqual } from 'es-toolkit/compat';
+       */
+      srcWithReplacedImports = srcWithReplacedImports.replace(
+        defaultSingleImportRegex,
+        (match, custom: string, _moduleName: string, actual: string) => {
+          if (isUnsupportedFunction(actual)) {
+            warnUnsupportedFunction([actual]);
+
+            return match;
+          }
+
+          return `import { ${renderNamedImport({ actual, custom })} } from 'es-toolkit/compat'`;
+        },
+      );
+
+      /**
+       * Replaces e.g.:
+       * ```
+       * import get from 'lodash.get';
+       * ```
+       * with:
+       * ```
+       * import { get } from 'es-toolkit/compat';
+       * ```
+       * and:
+       * ```
+       * import lodashGet from 'lodash.get';
+       * ```
+       * with:
+       * ```
+       * import { get as lodashGet } from 'es-toolkit/compat';
+       * ```
+       */
+      srcWithReplacedImports = srcWithReplacedImports.replace(
+        standalonePackageImportRegex,
+        (match, custom: string, standalonePackageName: string) => {
+          if (isUnsupportedStandalonePackage(standalonePackageName)) {
+            warnUnsupportedStandalonePackage(standalonePackageName);
+
+            return match;
+          }
+
+          const actual = getActualFunctionName(standalonePackageName);
+
+          if (!actual) {
+            throw new Error(`Unable to find actual function name for ${standalonePackageName}`);
+          }
+
+          return `import { ${renderNamedImport({ actual, custom })} } from 'es-toolkit/compat'`;
+        },
+      );
+
+      const result = {
+        code: srcWithReplacedImports,
+        map: null,
+      };
+
+      transformCache.set(cacheKey, result);
+
+      return result;
     },
   } satisfies PluginOption;
 }
