@@ -3,8 +3,10 @@ import * as esToolkitCompat from 'es-toolkit/compat';
 import type { PluginOption } from 'vite';
 
 const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/gm;
-const namedImportsRegex = /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"]lodash['"]/gm;
-const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\/(\w+)(\.js)?['"]/gm;
+const starImportRegex = /import\s+\*\s+as\s+(\w+)\s+from\s+['"](lodash(?:-es)?)['"]/gm;
+const namedImportsRegex =
+  /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"](lodash(?:-es)?)['"]/gm;
+const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"](lodash(?:-es)?)\/(\w+)(\.js)?['"]/gm;
 
 type NamedImport = {
   actualName: string;
@@ -119,6 +121,44 @@ export default function viteEsToolkitPlugin(): {
         /**
          * Replaces e.g.:
          * ```
+         * import * as lodash from 'lodash';
+         * ```
+         * with:
+         * ```
+         * import * as lodash from 'es-toolkit/compat';
+         * ```
+         * provided that no unsupported functions are used.
+         */
+        srcWithReplacedImports = srcWithReplacedImports.replace(
+          starImportRegex,
+          (match, starImportName: string) => {
+            // If p1 = "_", then find all occurences of "_.*" in the source code
+            const globalImportUsages = srcWithReplacedImports.match(
+              new RegExp(`\\b${starImportName}\\.\\w+`, 'g'),
+            );
+
+            if (!globalImportUsages) {
+              // No lodash functions are used, will be treeshaken anyway
+              return match;
+            }
+
+            const usedFunctions = globalImportUsages.map((usage) => usage.split('.')[1] || '');
+
+            const unsupportedFunctions = usedFunctions.filter(isUnsupportedFunction);
+
+            if (unsupportedFunctions.length) {
+              warnUnsupportedFunction(unsupportedFunctions);
+
+              return match;
+            }
+
+            return `import * as ${starImportName} from 'es-toolkit/compat'`;
+          },
+        );
+
+        /**
+         * Replaces e.g.:
+         * ```
          * import { every, isEqual } from 'lodash';
          * ```
          * with:
@@ -130,7 +170,7 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
-          (match, rawNamedImportNames: string) => {
+          (match, rawNamedImportNames: string, moduleName: string) => {
             // Split by comma, trim whitespace, remove empty strings
             const namedImportNames = rawNamedImportNames
               .split(',')
@@ -153,7 +193,7 @@ export default function viteEsToolkitPlugin(): {
                 return match;
               }
 
-              return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat';import { ${renderNamedImports(unsupportedFunctions)} } from 'lodash'`;
+              return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat';import { ${renderNamedImports(unsupportedFunctions)} } from '${moduleName}'`;
             }
 
             return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat'`;
@@ -179,7 +219,12 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultSingleImportRegex,
-          (match, customNamedImportName: string, actualNamedImportName: string) => {
+          (
+            match,
+            customNamedImportName: string,
+            _moduleName: string,
+            actualNamedImportName: string,
+          ) => {
             if (isUnsupportedFunction(actualNamedImportName)) {
               warnUnsupportedFunction([actualNamedImportName]);
 
