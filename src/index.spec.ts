@@ -380,4 +380,50 @@ lodash.isEqual({}, {});"`);
       expect(result).toMatchInlineSnapshot(`"import every from 'lodash-es/every.js';"`);
     });
   });
+
+  describe('import from lodash.*', () => {
+    it('should replace default import from lodash.* with named import from es-toolkit/compat when import name matches function name', () => {
+      const src = `import get from 'lodash.get';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"import { get } from 'es-toolkit/compat';"`);
+    });
+
+    it('should replace default import from lodash.* with renamed named import from es-toolkit/compat when import name is different', () => {
+      const src = `import lodashGet from 'lodash.get';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(
+        `"import { get as lodashGet } from 'es-toolkit/compat';"`,
+      );
+    });
+
+    it('should keep unsupported default imports from lodash.*', () => {
+      const src = `import every from 'lodash.every';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"import every from 'lodash.every';"`);
+    });
+
+    it('should handle multiple lodash.* imports correctly', () => {
+      const src = `
+import get from 'lodash.get';
+import isEqual from 'lodash.isequal';
+import lodashClone from 'lodash.clone';
+import every from 'lodash.every';
+      `;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"
+import { get } from 'es-toolkit/compat';
+import { isEqual } from 'es-toolkit/compat';
+import { clone as lodashClone } from 'es-toolkit/compat';
+import every from 'lodash.every';
+      "`);
+    });
+  });
 });
