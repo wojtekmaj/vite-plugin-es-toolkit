@@ -3,8 +3,9 @@ import * as esToolkitCompat from 'es-toolkit/compat';
 import type { PluginOption } from 'vite';
 
 const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash(?:-es)?['"]/gm;
-const namedImportsRegex = /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"]lodash(?:-es)?['"]/gm;
-const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"]lodash(?:-es)\/(\w+)(\.js)?['"]/gm;
+const namedImportsRegex =
+  /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"](lodash(?:-es)?)['"]/gm;
+const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"](lodash(?:-es)?)\/(\w+)(\.js)?['"]/gm;
 
 type NamedImport = {
   actualName: string;
@@ -130,7 +131,7 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           namedImportsRegex,
-          (match, rawNamedImportNames: string) => {
+          (match, rawNamedImportNames: string, moduleName) => {
             // Split by comma, trim whitespace, remove empty strings
             const namedImportNames = rawNamedImportNames
               .split(',')
@@ -153,7 +154,7 @@ export default function viteEsToolkitPlugin(): {
                 return match;
               }
 
-              return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat';import { ${renderNamedImports(unsupportedFunctions)} } from 'lodash'`;
+              return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat';import { ${renderNamedImports(unsupportedFunctions)} } from '${moduleName}'`;
             }
 
             return `import { ${renderNamedImports(currentSupportedFunctions)} } from 'es-toolkit/compat'`;
@@ -179,7 +180,12 @@ export default function viteEsToolkitPlugin(): {
          */
         srcWithReplacedImports = srcWithReplacedImports.replace(
           defaultSingleImportRegex,
-          (match, customNamedImportName: string, actualNamedImportName: string) => {
+          (
+            match,
+            customNamedImportName: string,
+            _moduleName: string,
+            actualNamedImportName: string,
+          ) => {
             if (isUnsupportedFunction(actualNamedImportName)) {
               warnUnsupportedFunction([actualNamedImportName]);
 
