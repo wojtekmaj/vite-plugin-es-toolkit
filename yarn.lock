@@ -1738,7 +1738,7 @@ __metadata:
     husky: "npm:^9.0.0"
     rimraf: "npm:^6.0.0"
     typescript: "npm:^5.5.2"
-    vite: "npm:^6.2.0"
+    vite: "npm:^6.2.3"
     vitest: "npm:^3.0.5"
   peerDependencies:
     es-toolkit: ^1.11.0
@@ -1746,7 +1746,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"vite@npm:^5.0.0 || ^6.0.0, vite@npm:^6.2.0":
+"vite@npm:^5.0.0 || ^6.0.0, vite@npm:^6.2.3":
   version: 6.2.3
   resolution: "vite@npm:6.2.3"
   dependencies:
