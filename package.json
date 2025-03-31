@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "clean": "rimraf dist",
+    "clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true })\"",
     "format": "biome format",
     "lint": "biome lint",
     "postinstall": "husky",
@@ -40,7 +40,6 @@
     "@biomejs/biome": "1.9.0",
     "es-toolkit": "^1.20.0",
     "husky": "^9.0.0",
-    "rimraf": "^6.0.0",
     "typescript": "^5.5.2",
     "vite": "^6.2.4",
     "vitest": "^3.0.5"
