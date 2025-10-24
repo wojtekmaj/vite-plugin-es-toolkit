@@ -11,6 +11,10 @@ Vite plugin for replacing Lodash with [es-toolkit](https://es-toolkit.slash.page
 - Import by adding `import esToolkitPlugin from 'vite-plugin-es-toolkit'`.
 - Use it by adding `esToolkitPlugin()` to `plugins` section of your Vite config.
 
+## Getting started
+
+To use this plugin, you need to have [es-toolkit](https://es-toolkit.slash.page/) installed in your project. The minimum required version is `1.11.0`, but `1.39.3` or later is recommended to ensure 100% compatibility with Lodash.
+
 ## Usage
 
 Here's an example of basic configuration:
