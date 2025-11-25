@@ -105,6 +105,20 @@ lodash.isEqual({}, {});"`);
     });
 
     // Note: default import from lodash-es does not exist, therefore there is no equivalent test case for lodash-es
+
+    it("should work for minified outputs (no space between from and 'lodash')", () => {
+      const src = `import _ from'lodash';
+_.isEqual({}, {});
+_.isFunction(() => {});`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(
+        `"import * as _ from 'es-toolkit/compat';
+_.isEqual({}, {});
+_.isFunction(() => {});"`,
+      );
+    });
   });
 
   describe('named import', () => {
@@ -271,6 +285,14 @@ lodash.isEqual({}, {});"`);
         `"import { isEqual } from 'es-toolkit/compat';import { every } from 'lodash-es';"`,
       );
     });
+
+    it("should work for minified outputs (no space between from and 'lodash')", () => {
+      const src = `import { isEqual } from'lodash';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"import { isEqual } from 'es-toolkit/compat';"`);
+    });
   });
 
   describe('import from lodash/*', () => {
@@ -324,6 +346,14 @@ lodash.isEqual({}, {});"`);
       const result = runPlugin(src);
 
       expect(result).toMatchInlineSnapshot(`"import every from 'lodash-es/every';"`);
+    });
+
+    it("should work for minified outputs (no space between from and 'lodash')", () => {
+      const src = `import isEqual from'lodash/isEqual';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"import { isEqual } from 'es-toolkit/compat';"`);
     });
   });
 
@@ -379,6 +409,14 @@ lodash.isEqual({}, {});"`);
 
       expect(result).toMatchInlineSnapshot(`"import every from 'lodash-es/every.js';"`);
     });
+
+    it("should work for minified outputs (no space between from and 'lodash')", () => {
+      const src = `import isEqual from'lodash/isEqual.js';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"import { isEqual } from 'es-toolkit/compat';"`);
+    });
   });
 
   describe('import from lodash.*', () => {
@@ -424,6 +462,14 @@ import { isEqual } from 'es-toolkit/compat';
 import { clone as lodashClone } from 'es-toolkit/compat';
 import every from 'lodash.every';
       "`);
+    });
+
+    it("should work for minified outputs (no space between from and 'lodash')", () => {
+      const src = `import get from'lodash.get';`;
+
+      const result = runPlugin(src);
+
+      expect(result).toMatchInlineSnapshot(`"import { get } from 'es-toolkit/compat';"`);
     });
   });
 });
