@@ -5,7 +5,7 @@ import type { PluginOption } from 'vite';
 const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]lodash['"]/gm;
 const starImportRegex = /import\s+\*\s+as\s+(\w+)\s+from\s+['"](lodash(?:-es)?)['"]/gm;
 const namedImportsRegex =
-  /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s+['"](lodash(?:-es)?)['"]/gm;
+  /import\s+\{\s*([\w( as \w)\s,]+)\s*\}\s+from\s*['"](lodash(?:-es)?)['"]/gm;
 const defaultSingleImportRegex = /import\s+(\w+)\s+from\s+['"](lodash(?:-es)?)\/(\w+)(\.js)?['"]/gm;
 const standalonePackageImportRegex = /import\s+(\w+)\s+from\s+['"]lodash\.(\w+)['"]/gm;
 
