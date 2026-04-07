@@ -41,8 +41,8 @@
     "es-toolkit": "^1.20.0",
     "husky": "^9.0.0",
     "typescript": "^6.0.2",
-    "vite": "^7.1.11",
-    "vitest": "^4.0.1"
+    "vite": "^8.0.5",
+    "vitest": "^4.1.0"
   },
   "peerDependencies": {
     "es-toolkit": "^1.11.0",
