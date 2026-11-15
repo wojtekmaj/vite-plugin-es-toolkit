@@ -24,9 +24,7 @@ import { defineConfig } from 'vite';
 import esToolkitPlugin from 'vite-plugin-es-toolkit';
 
 export default defineConfig({
-  plugins: [
-    esToolkitPlugin(),
-  ],
+  plugins: [esToolkitPlugin()],
 });
 ```
 
